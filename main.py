@@ -10,6 +10,7 @@ import sys
 class Controller(object):
   complete_alphabet = [ 'a','b','c','d','e','f','g','h','i','j','k','l','m','n','o','p','q','r','s','t','u','v','w','x','y','z' ]
   maximum_name_length = 10
+  moments_per_actual_second = 1
 
   logger = logging.getLogger()
   file_handler = logging.FileHandler('game.log')
@@ -23,7 +24,7 @@ class Controller(object):
     logging.debug(f'Doing core loop iteration...')
     Controller.world.iterate_moment()
     Controller.log_info()
-    threading.Timer(1.0, Controller.core_loop).start()
+    threading.Timer(1.0/Controller.moments_per_actual_second, Controller.core_loop).start()
 
   @staticmethod
   def log_info():
@@ -95,10 +96,21 @@ class World(object):
     self.age_in_moments = 0
     self.population = World.population
     self.monster_spawn_rate = World.monster_spawn_rate
+    self.multiverses = []
 
   def iterate_moment(self):
     self.logger.info(f'*****  Progressing world by one moment...  *****')
-    self.age_in_moments += 1
+
+    # Handle multiverse not existing
+    #if 'multiverse' not in self.__dict__:
+    if not self.multiverses:
+      self.logger.info(f'No multiverse exists, generating a new one...')
+      multiverse = Multiverse()
+      self.multiverses.append(multiverse)
+
+    # Tick multiverses
+    for multiverse in self.multiverses:
+      multiverse.tick()
 
     for resident in self.population:
       #resident.speak()
@@ -115,10 +127,18 @@ class World(object):
       # Kill the resident with the lowest honor
       self.punish_least_blessed()
 
+    # Decide whether to spawn a random entity
     self.logger.debug(f'Checking for monster spawn (<{self.monster_spawn_rate}>/1 chance)...')
     if random.random() < self.monster_spawn_rate:
       self.population.append(self.create_random_actor())
+
+    # Print world population total
+    self.logger.info(f'World population count is {len(self.population)}')
+
+    # Actually iterate the moment counter
+    self.age_in_moments += 1
     self.logger.info(f'World is <{self.age_in_moments}>')
+
 
   def punish_least_blessed(self, chance=0.8):
     if self.population:
@@ -164,19 +184,95 @@ class Multiverse(Location):
   """ Base 'real' location in which all other locations exist """
 
   def __init__(self, 
-        name='Multiverse'):
-    Controller.world.logger.debug('Instantiating a new multiverse.')
+        name='multiverse',
+        universes=[]):
+    Controller.world.logger.info('Instantiating a new multiverse.')
     super(Multiverse, self).__init__()
     self.name = name
+    self.universes = universes
+
+  def tick(self):
+    self.ensure_a_universe_exists()
+    for universe in self.universes:
+      universe.tick()
+
+  def ensure_a_universe_exists(self):
+    if not self.universes:
+      universe = Universe()
+      self.universes.append(universe)
 
 
 class Universe(Location):
   """ A single universe """
 
   def __init__(self,
-      name='Universe'):
-    Controller.world.logger.debug('Instantiating a new universe.')
+      name='universe',
+      galaxies=[]):
+    Controller.world.logger.info('Instantiating a new universe.')
     super(Universe, self).__init__()
+    self.name = name
+    self.galaxies = galaxies
+
+  def tick(self):
+    self.ensure_a_galaxy_exists()
+    for galaxy in self.galaxies:
+      galaxy.tick()
+
+  def ensure_a_galaxy_exists(self):
+    if not self.galaxies:
+      galaxy = Galaxy()
+      self.galaxies.append(galaxy)
+
+
+class Galaxy(Location):
+  """ A single galaxy """
+  
+  def __init__(self,
+      name='galaxy',
+      star_systems = []):
+    Controller.world.logger.info('Instantiating a new galaxy.')
+    super(Galaxy, self).__init__()
+    self.name = name
+    self.star_systems = star_systems
+
+  def tick(self):
+    self.ensure_a_star_system_exists()
+    for star_system in self.star_systems:
+      star_system.tick()
+
+  def ensure_a_star_system_exists(self):
+    if not self.star_systems:
+      star_system = StarSystem()
+      self.star_systems.append(star_system)
+
+
+class StarSystem(Location):
+  """ A single star system. """
+  
+  def __init__(self,
+      name='star system',
+      planets = []):
+    Controller.world.logger.info('Instantiating a new star system.')
+    super(StarSystem, self).__init__()
+    self.name = name
+    self.planets = planets
+
+  def tick(self):
+    self.ensure_a_planet_exists()
+
+  def ensure_a_planet_exists(self):
+    if not self.planets:
+      planet = Planet()
+      self.planets.append(planet)
+    
+
+class Planet(Location):
+  """ A single planet. """
+
+  def __init__(self,
+      name='planet'):
+    Controller.world.logger.info('Instantiating a new planet.')
+    super(Planet, self).__init__()
     self.name = name
 
 
@@ -187,7 +283,6 @@ class BaseAI(object):
   def make_choice(self):
     choice = random.choice(BaseAI.simple_choice_matrix)
     return choice
-    
 
 
 class Thing(object):
@@ -271,7 +366,7 @@ class Actor(Thing):
 
   def pray(self):
     #print(f'<{self.name}> prays for favor')
-    Controller.world.logger.info(f'[{self.name}]: prays for favor')
+    Controller.world.logger.debug(f'[{self.name}]: prays for favor')
     possible_blessings = [0] * 24 + [1] * 12 + [-1] * 6 + [10] * 1
     blessing = random.choice(possible_blessings)
     self.modify('blessing', blessing)
