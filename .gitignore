@@ -4,3 +4,7 @@
 **/*.history
 *.pyc
 **/*.pyc
+*.swp
+**/*.swp
+*~
+**/*~
