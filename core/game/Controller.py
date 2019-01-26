@@ -4,6 +4,7 @@
 import logging
 import threading
 import sys
+from .World import World
 
 
 class Controller():
@@ -18,8 +19,15 @@ class Controller():
   logger.addHandler(_stream_handler)
   logger.setLevel(logging.DEBUG)
 
+  world = World()
+
   @staticmethod
   def core_loop():
     logging.debug(f'Core loop iterating...')
-    ##Controller.world.iterate_moment()
+    Controller.tick_world()
     threading.Timer(1.0/Controller.moments_per_real_second, Controller.core_loop).start()
+
+  @staticmethod
+  def tick_world():
+    tick = Controller.world.tick()
+    logging.debug(tick['log_message'])
