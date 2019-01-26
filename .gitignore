@@ -1,2 +1,6 @@
 *.log
+**/*.log
 *.history
+**/*.history
+*.pyc
+**/*.pyc
