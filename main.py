@@ -302,9 +302,6 @@ class Thing(object):
             continue
         setattr(self, key, value)
 
-  def die(self):
-    Controller.world.logger.info(f'{self.name} has died!')
-    Controller.world.population.remove(self)
 
   def log_properties(self):
     for key, value in vars(self).items():
@@ -359,6 +356,10 @@ class Actor(Thing):
   @property
   def hp_maximum(self):
     return self.vitality
+
+  def die(self):
+    Controller.world.logger.info(f'{self.name} has died!')
+    Controller.world.population.remove(self)
 
   def speak(self):
     #print(f'<{self.name}>: <{self.dialogue}>')
