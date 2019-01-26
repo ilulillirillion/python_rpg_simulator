@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 
-from core.Game import Game
+from core.game.Game import Game
 
 
 if __name__ == '__main__':

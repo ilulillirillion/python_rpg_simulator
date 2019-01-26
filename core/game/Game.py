@@ -2,7 +2,7 @@
 
 
 from .Controller import Controller
-from .flask.Flask import Flask
+from ..flask.Flask import Flask
 
 
 class Game():
